@@ -32,6 +32,7 @@
 #include "cloudproviders/cloudprovidermanager.h"
 #endif
 
+#include <QQmlApplicationEngine>
 #include <QDesktopServices>
 #include <QDir>
 #include <QMessageBox>
@@ -66,7 +67,7 @@ ownCloudGui::ownCloudGui(Application *parent)
     , _app(parent)
 {
     _tray = Systray::instance();
-    _tray->setParent(this);
+    _tray->setTrayEngine(new QQmlApplicationEngine(this));
     // for the beginning, set the offline icon until the account was verified
     _tray->setIcon(Theme::instance()->folderOfflineIcon(/*systray?*/ true));
 
@@ -78,11 +79,17 @@ ownCloudGui::ownCloudGui(Application *parent)
     connect(_tray.data(), &Systray::pauseSync,
         this, &ownCloudGui::slotPauseAllFolders);
 
-    connect(_tray.data(), &Systray::pauseSync,
+    connect(_tray.data(), &Systray::resumeSync,
         this, &ownCloudGui::slotUnpauseAllFolders);
 
     connect(_tray.data(), &Systray::openHelp,
         this, &ownCloudGui::slotHelp);
+
+    connect(_tray.data(), &Systray::openAccountWizard,
+        this, &ownCloudGui::slotNewAccountWizard);
+
+    connect(_tray.data(), &Systray::openMainDialog,
+        this, &ownCloudGui::slotOpenMainDialog);
 
     connect(_tray.data(), &Systray::openSettings,
         this, &ownCloudGui::slotShowSettings);
@@ -154,10 +161,15 @@ void ownCloudGui::slotOpenSettingsDialog()
     }
 }
 
+void ownCloudGui::slotOpenMainDialog()
+{
+    if (!_tray->isOpen()) {
+        _tray->showWindow();
+    }
+}
+
 void ownCloudGui::slotTrayClicked(QSystemTrayIcon::ActivationReason reason)
 {
-
-    // Left click
     if (reason == QSystemTrayIcon::Trigger) {
         if (OwncloudSetupWizard::bringWizardToFrontIfVisible()) {
             // brought wizard to front

@@ -42,6 +42,9 @@ User::User(AccountStatePtr &account, const bool &isCurrent, QObject *parent)
             [=]() { if (isConnected()) {slotRefresh();} });
     connect(_account.data(), &AccountState::hasFetchedNavigationApps,
         this, &User::slotRebuildNavigationAppList);
+    connect(_account->account().data(), &Account::accountChangedDisplayName, this, &User::nameChanged);
+
+    connect(FolderMan::instance(), &FolderMan::folderListChanged, this, &User::hasLocalFolderChanged);
 }
 
 void User::slotBuildNotificationDisplay(const ActivityList &list)
@@ -149,6 +152,7 @@ void User::slotRefreshNotifications()
 
 void User::slotRebuildNavigationAppList()
 {
+    emit serverHasTalkChanged();
     // Rebuild App list
     UserAppsModel::instance()->buildAppList();
 }
@@ -399,7 +403,7 @@ void User::setCurrentUser(const bool &isCurrent)
     _isCurrentUser = isCurrent;
 }
 
-Folder *User::getFolder()
+Folder *User::getFolder() const
 {
     foreach (Folder *folder, FolderMan::instance()->map()) {
         if (folder->accountState() == _account.data()) {
@@ -472,9 +476,19 @@ QImage User::avatar(bool whiteBg) const
     }
 }
 
+bool User::hasLocalFolder() const
+{
+    return getFolder() != nullptr;
+}
+
 bool User::serverHasTalk() const
 {
-    return _account->hasTalk();
+    return talkApp() != nullptr;
+}
+
+AccountApp *User::talkApp() const
+{
+    return _account->findApp(QStringLiteral("spreed"));
 }
 
 bool User::hasActivities() const
@@ -544,24 +558,22 @@ Q_INVOKABLE int UserModel::numUsers()
     return _users.size();
 }
 
-Q_INVOKABLE int UserModel::currentUserId()
+Q_INVOKABLE int UserModel::currentUserId() const
 {
     return _currentUserId;
 }
 
 Q_INVOKABLE bool UserModel::isUserConnected(const int &id)
 {
-    if (!_users.isEmpty()) {
-        return _users[id]->isConnected();
-    } else {
+    if (_users.isEmpty())
         return false;
-    }
 
+    return _users[id]->isConnected();
 }
 
 Q_INVOKABLE QImage UserModel::currentUserAvatar()
 {
-    if (_users.count() >= 1) {
+    if (!_users.isEmpty()) {
         return _users[_currentUserId]->avatar();
     } else {
         QImage image(128, 128, QImage::Format_ARGB32);
@@ -576,34 +588,18 @@ Q_INVOKABLE QImage UserModel::currentUserAvatar()
 
 QImage UserModel::avatarById(const int &id)
 {
-    return _users[id]->avatar(true);
-}
+    if (_users.isEmpty())
+        return {};
 
-Q_INVOKABLE QString UserModel::currentUserName()
-{
-    if (_users.count() >= 1) {
-        return _users[_currentUserId]->name();
-    } else {
-        return QString("No users");
-    }
+    return _users[id]->avatar(true);
 }
 
 Q_INVOKABLE QString UserModel::currentUserServer()
 {
-    if (_users.count() >= 1) {
-        return _users[_currentUserId]->server();
-    } else {
-        return QString("");
-    }
-}
+    if (_users.isEmpty())
+        return {};
 
-Q_INVOKABLE bool UserModel::currentServerHasTalk()
-{
-    if (_users.count() >= 1) {
-        return _users[_currentUserId]->serverHasTalk();
-    } else {
-        return false;
-    }
+    return _users[_currentUserId]->server();
 }
 
 void UserModel::addUser(AccountStatePtr &user, const bool &isCurrent)
@@ -636,22 +632,31 @@ int UserModel::currentUserIndex()
 
 Q_INVOKABLE void UserModel::openCurrentAccountLocalFolder()
 {
+    if (_users.isEmpty())
+        return;
+
     _users[_currentUserId]->openLocalFolder();
 }
 
 Q_INVOKABLE void UserModel::openCurrentAccountTalk()
 {
-    QString url = _users[_currentUserId]->server(false) + "/apps/spreed";
-    if (!(url.contains("http://") || url.contains("https://"))) {
-        url = "https://" + _users[_currentUserId]->server(false) + "/apps/spreed";
+    if (!currentUser())
+        return;
+
+    const auto talkApp = currentUser()->talkApp();
+    if (talkApp) {
+        QDesktopServices::openUrl(talkApp->url());
+    } else {
+        qCWarning(lcActivity) << "The Talk app is not enabled on" << currentUser()->server();
     }
-    QDesktopServices::openUrl(QUrl(url));
 }
 
 Q_INVOKABLE void UserModel::openCurrentAccountServer()
 {
     // Don't open this URL when the QML appMenu pops up on click (see Window.qml)
-    if(appList().count() > 0)
+    if (appList().count() > 0)
+        return;
+    if (_users.isEmpty())
         return;
 
     QString url = _users[_currentUserId]->server(false);
@@ -663,6 +668,9 @@ Q_INVOKABLE void UserModel::openCurrentAccountServer()
 
 Q_INVOKABLE void UserModel::switchCurrentUser(const int &id)
 {
+    if (_users.isEmpty())
+        return;
+
     _users[_currentUserId]->setCurrentUser(false);
     _users[id]->setCurrentUser(true);
     _currentUserId = id;
@@ -672,18 +680,27 @@ Q_INVOKABLE void UserModel::switchCurrentUser(const int &id)
 
 Q_INVOKABLE void UserModel::login(const int &id)
 {
+    if (_users.isEmpty())
+        return;
+
     _users[id]->login();
     emit refreshCurrentUserGui();
 }
 
 Q_INVOKABLE void UserModel::logout(const int &id)
 {
+    if (_users.isEmpty())
+        return;
+
     _users[id]->logout();
     emit refreshCurrentUserGui();
 }
 
 Q_INVOKABLE void UserModel::removeAccount(const int &id)
 {
+    if (_users.isEmpty())
+        return;
+
     QMessageBox messageBox(QMessageBox::Question,
         tr("Confirm Account Removal"),
         tr("<p>Do you really want to remove the connection to the account <i>%1</i>?</p>"
@@ -755,31 +772,48 @@ QHash<int, QByteArray> UserModel::roleNames() const
 
 ActivityListModel *UserModel::currentActivityModel()
 {
+    if (_users.isEmpty())
+        return nullptr;
+
     return _users[currentUserIndex()]->getActivityModel();
 }
 
 bool UserModel::currentUserHasActivities()
 {
+    if (_users.isEmpty())
+        return false;
+
     return _users[currentUserIndex()]->hasActivities();
 }
 
 bool UserModel::currentUserHasLocalFolder()
 {
+    if (_users.isEmpty())
+        return false;
+
     return _users[currentUserIndex()]->getFolder() != nullptr;
 }
 
 void UserModel::fetchCurrentActivityModel()
 {
-    _users[currentUserId()]->slotRefresh();
+    if (!_users.isEmpty())
+        _users[currentUserId()]->slotRefresh();
 }
 
 AccountAppList UserModel::appList() const
 {
-    if (_users.count() > 0) {
-        return _users[_currentUserId]->appList();
-    } else {
+    if (_users.isEmpty())
         return AccountAppList();
-    }
+
+    return _users[_currentUserId]->appList();
+}
+
+User *UserModel::currentUser() const
+{
+    if (_users.isEmpty())
+        return nullptr;
+
+    return _users[currentUserId()];
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -827,10 +861,11 @@ void UserAppsModel::buildAppList()
         endRemoveRows();
     }
 
-    if(UserModel::instance()->appList().count() > 0) {
-        foreach(AccountApp *app, UserModel::instance()->appList()) {
+    if (UserModel::instance()->appList().count() > 0) {
+        const auto talkApp = UserModel::instance()->currentUser()->talkApp();
+        foreach (AccountApp *app, UserModel::instance()->appList()) {
             // Filter out Talk because we have a dedicated button for it
-            if(app->id() == QLatin1String("spreed"))
+            if (talkApp && app->id() == talkApp->id())
                 continue;
 
             beginInsertRows(QModelIndex(), rowCount(), rowCount());

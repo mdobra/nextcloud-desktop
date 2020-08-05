@@ -22,6 +22,7 @@
 
 class QScreen;
 class QQmlApplicationEngine;
+class QQuickWindow;
 
 namespace OCC {
 
@@ -49,6 +50,7 @@ public:
     enum class TaskBarPosition { Bottom, Left, Top, Right };
     Q_ENUM(TaskBarPosition);
 
+    void setTrayEngine(QQmlApplicationEngine *trayEngine);
     void create();
     void showMessage(const QString &title, const QString &message, MessageIcon icon = Information);
     void setToolTip(const QString &tip);
@@ -58,14 +60,12 @@ public:
     Q_INVOKABLE bool syncIsPaused();
     Q_INVOKABLE void setOpened();
     Q_INVOKABLE void setClosed();
-    Q_INVOKABLE int currentScreenIndex() const;
-    Q_INVOKABLE QPoint calcTrayIconCenter() const;
-    Q_INVOKABLE TaskBarPosition taskbarOrientation() const;
-    Q_INVOKABLE QRect taskbarGeometry() const;
-    Q_INVOKABLE QPoint computeWindowPosition(int width, int height) const;
+    Q_INVOKABLE void positionWindow(QQuickWindow *window) const;
 
 signals:
     void currentUserChanged();
+    void openAccountWizard();
+    void openMainDialog();
     void openSettings();
     void openHelp();
     void shutdown();
@@ -86,10 +86,14 @@ private:
     QScreen *currentScreen() const;
     QRect currentScreenRect() const;
     QPoint computeWindowReferencePoint() const;
+    QPoint calcTrayIconCenter() const;
+    TaskBarPosition taskbarOrientation() const;
+    QRect taskbarGeometry() const;
+    QPoint computeWindowPosition(int width, int height) const;
 
     bool _isOpen = false;
-    bool _syncIsPaused = false;
-    QQmlApplicationEngine *_trayEngine;
+    bool _syncIsPaused = true;
+    QPointer<QQmlApplicationEngine> _trayEngine;
 };
 
 } // namespace OCC

@@ -110,7 +110,7 @@ bool RequestEtagJob::finished()
                 }
             }
         }
-        emit etagRetreived(etag);
+        emit etagRetrieved(etag);
     }
     return true;
 }
@@ -119,6 +119,12 @@ bool RequestEtagJob::finished()
 
 MkColJob::MkColJob(AccountPtr account, const QString &path, QObject *parent)
     : AbstractNetworkJob(account, path, parent)
+{
+}
+
+MkColJob::MkColJob(AccountPtr account, const QString &path, const QMap<QByteArray, QByteArray> &extraHeaders, QObject *parent)
+    : AbstractNetworkJob(account, path, parent)
+    , _extraHeaders(extraHeaders)
 {
 }
 
@@ -649,6 +655,10 @@ void AvatarJob::start()
 
 QImage AvatarJob::makeCircularAvatar(const QImage &baseAvatar)
 {
+    if (baseAvatar.isNull()) {
+        return {};
+    }
+
     int dim = baseAvatar.width();
 
     QImage avatar(dim, dim, QImage::Format_ARGB32);
@@ -1027,7 +1037,7 @@ bool DeleteApiJob::finished()
     const auto replyData = QString::fromUtf8(reply()->readAll());
     qCInfo(lcJsonApiJob()) << "TMX Delete Job" << replyData;
     emit result(httpStatus);
-		return true;
+    return true;
 }
 
 void fetchPrivateLinkUrl(AccountPtr account, const QString &remotePath,
@@ -1063,4 +1073,3 @@ void fetchPrivateLinkUrl(AccountPtr account, const QString &remotePath,
 }
 
 } // namespace OCC
-

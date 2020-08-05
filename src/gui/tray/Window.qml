@@ -9,6 +9,8 @@ import QtGraphicalEffects 1.0
 // Custom qml modules are in /theme (and included by resources.qrc)
 import Style 1.0
 
+import com.nextcloud.desktopclient 1.0
+
 Window {
     id:         trayWindow
 
@@ -17,23 +19,21 @@ Window {
     color:      "transparent"
     flags:      Qt.Dialog | Qt.FramelessWindowHint
 
+    readonly property int maxMenuHeight: Style.trayWindowHeight - Style.trayWindowHeaderHeight - 2 * Style.trayWindowBorderWidth
+
     // Close tray window when focus is lost (e.g. click somewhere else on the screen)
     onActiveChanged: {
         if(!active) {
             trayWindow.hide();
-            systrayBackend.setClosed();
+            Systray.setClosed();
         }
     }
 
     onVisibleChanged: {
         currentAccountAvatar.source = ""
         currentAccountAvatar.source = "image://avatars/currentUser"
-        currentAccountUser.text = userModelBackend.currentUserName();
-        currentAccountServer.text = userModelBackend.currentUserServer();
-        openLocalFolderButton.visible = userModelBackend.currentUserHasLocalFolder();
-        trayWindowTalkButton.visible = userModelBackend.currentServerHasTalk() ? true : false;
         currentAccountStateIndicator.source = ""
-        currentAccountStateIndicator.source = userModelBackend.isUserConnected(userModelBackend.currentUserId()) ? "qrc:///client/theme/colored/state-ok.svg" : "qrc:///client/theme/colored/state-offline.svg"
+        currentAccountStateIndicator.source = UserModel.isUserConnected(UserModel.currentUserId()) ? "qrc:///client/theme/colored/state-ok.svg" : "qrc:///client/theme/colored/state-offline.svg"
 
         // HACK: reload account Instantiator immediately by restting it - could be done better I guess
         // see also id:accountMenu below
@@ -42,43 +42,49 @@ Window {
     }
 
     Connections {
-        target: userModelBackend
+        target: UserModel
         onRefreshCurrentUserGui: {
             currentAccountAvatar.source = ""
             currentAccountAvatar.source = "image://avatars/currentUser"
-            currentAccountUser.text = userModelBackend.currentUserName();
-            currentAccountServer.text = userModelBackend.currentUserServer();
             currentAccountStateIndicator.source = ""
-            currentAccountStateIndicator.source = userModelBackend.isUserConnected(userModelBackend.currentUserId()) ? "qrc:///client/theme/colored/state-ok.svg" : "qrc:///client/theme/colored/state-offline.svg"
+            currentAccountStateIndicator.source = UserModel.isUserConnected(UserModel.currentUserId()) ? "qrc:///client/theme/colored/state-ok.svg" : "qrc:///client/theme/colored/state-offline.svg"
         }
         onNewUserSelected: {
             accountMenu.close();
-            openLocalFolderButton.visible = userModelBackend.currentUserHasLocalFolder();
-            trayWindowTalkButton.visible = userModelBackend.currentServerHasTalk() ? true : false;
         }
     }
 
     Connections {
-        target: systrayBackend
+        target: Systray
         onShowWindow: {
             accountMenu.close();
+            appsMenu.close();
 
-            trayWindow.screen = Qt.application.screens[systrayBackend.currentScreenIndex()];
-
-            var position = systrayBackend.computeWindowPosition(trayWindow.width, trayWindow.height)
-            trayWindow.x = position.x
-            trayWindow.y = position.y
+            Systray.positionWindow(trayWindow);
 
             trayWindow.show();
             trayWindow.raise();
             trayWindow.requestActivate();
 
-            systrayBackend.setOpened();
-            userModelBackend.fetchCurrentActivityModel();
+            Systray.setOpened();
+            UserModel.fetchCurrentActivityModel();
         }
         onHideWindow: {
             trayWindow.hide();
-            systrayBackend.setClosed();
+            Systray.setClosed();
+        }
+    }
+
+    OpacityMask {
+        anchors.fill: parent
+        source: ShaderEffectSource {
+            sourceItem: trayWindowBackground
+            hideSource: true
+        }
+        maskSource: Rectangle {
+            width: trayWindowBackground.width
+            height: trayWindowBackground.height
+            radius: trayWindowBackground.radius
         }
     }
 
@@ -88,7 +94,7 @@ Window {
         anchors.fill:   parent
         radius:         Style.trayWindowRadius
         border.width:   Style.trayWindowBorderWidth
-        border.color:   Style.ncBlue
+        border.color:   Style.menuBorder
 
         Rectangle {
             id: trayWindowHeaderBackground
@@ -97,7 +103,6 @@ Window {
             anchors.top:    trayWindowBackground.top
             height:         Style.trayWindowHeaderHeight
             width:          Style.trayWindowWidth
-            radius:         (Style.trayWindowRadius > 0) ? (Style.trayWindowRadius - 1) : 0
             color:          Style.ncBlue
 
             // The overlay rectangle below eliminates the rounded corners from the bottom of the header
@@ -140,9 +145,8 @@ Window {
 
                         // We call open() instead of popup() because we want to position it
                         // exactly below the dropdown button, not the mouse
-                        onClicked:
-                        {
-                            syncPauseButton.text = systrayBackend.syncIsPaused() ? qsTr("Resume sync for all") : qsTr("Pause sync for all")
+                        onClicked: {
+                            syncPauseButton.text = Systray.syncIsPaused() ? qsTr("Resume sync for all") : qsTr("Pause sync for all")
                             accountMenu.open()
                         }
 
@@ -155,10 +159,11 @@ Window {
                             y: (currentAccountButton.y + Style.trayWindowHeaderHeight + 2)
 
                             width: (Style.currentAccountButtonWidth - 2)
+                            height: Math.min(implicitHeight, maxMenuHeight)
                             closePolicy: "CloseOnPressOutside"
 
                             background: Rectangle {
-                                border.color: Style.ncBlue
+                                border.color: Style.menuBorder
                                 radius: Style.currentAccountButtonRadius
                             }
 
@@ -171,7 +176,7 @@ Window {
 
                             Instantiator {
                                 id: userLineInstantiator
-                                model: userModelBackend
+                                model: UserModel
                                 delegate: UserLine {}
                                 onObjectAdded: accountMenu.insertItem(index, object)
                                 onObjectRemoved: accountMenu.removeItem(object)
@@ -180,6 +185,17 @@ Window {
                             MenuItem {
                                 id: addAccountButton
                                 height: Style.addAccountButtonHeight
+                                hoverEnabled: true
+
+                                background: Item {
+                                    height: parent.height
+                                    width: parent.menu.width
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        color: parent.parent.hovered ? Style.lightHover : "transparent"
+                                    }
+                                }
 
                                 RowLayout {
                                     anchors.fill: parent
@@ -204,82 +220,72 @@ Window {
                                         Layout.fillHeight: true
                                     }
                                 }
-                                onClicked: userModelBackend.addAccount()
+                                onClicked: UserModel.addAccount()
                             }
 
-                            MenuSeparator { id: accountMenuSeparator }
+                            MenuSeparator {
+                                contentItem: Rectangle {
+                                    implicitHeight: 1
+                                    color: Style.menuBorder
+                                }
+                            }
 
                             MenuItem {
                                 id: syncPauseButton
                                 font.pixelSize: Style.topLinePixelSize
-                                onClicked: systrayBackend.pauseResumeSync()
+                                hoverEnabled: true
+                                onClicked: Systray.pauseResumeSync()
+
+                                background: Item {
+                                    height: parent.height
+                                    width: parent.menu.width
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        color: parent.parent.hovered ? Style.lightHover : "transparent"
+                                    }
+                                }
                             }
 
                             MenuItem {
-                                text: qsTr("Open settings")
+                                text: qsTr("Settings")
                                 font.pixelSize: Style.topLinePixelSize
-                                onClicked: systrayBackend.openSettings()
+                                hoverEnabled: true
+                                onClicked: Systray.openSettings()
+
+                                background: Item {
+                                    height: parent.height
+                                    width: parent.menu.width
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        color: parent.parent.hovered ? Style.lightHover : "transparent"
+                                    }
+                                }
                             }
 
                             MenuItem {
-                                text: qsTr("Help")
+                                text: qsTr("Exit");
                                 font.pixelSize: Style.topLinePixelSize
-                                onClicked: systrayBackend.openHelp()
-                            }
+                                hoverEnabled: true
+                                onClicked: Systray.shutdown()
 
-                            MenuItem {
-                                text: qsTr("Quit Nextcloud")
-                                font.pixelSize: Style.topLinePixelSize
-                                onClicked: systrayBackend.shutdown()
+                                background: Item {
+                                    height: parent.height
+                                    width: parent.menu.width
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        color: parent.parent.hovered ? Style.lightHover : "transparent"
+                                    }
+                                }
                             }
                         }
                     }
 
-                    background:
-                        Item {
-                        id: leftHoverContainer
-
-                        height: Style.trayWindowHeaderHeight
-                        width:  Style.currentAccountButtonWidth
-                        Rectangle {
-                            width: Style.currentAccountButtonWidth / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            color: "transparent"
-                            clip: true
-                            Rectangle {
-                                width: Style.currentAccountButtonWidth
-                                height: Style.trayWindowHeaderHeight
-                                radius: Style.trayWindowRadius
-                                color: "white"
-                                opacity: 0.2
-                                visible: accountBtnMouseArea.containsMouse
-                            }
-                        }
-                        Rectangle {
-                            width: Style.currentAccountButtonWidth / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            anchors.bottom: leftHoverContainer.bottom
-                            color: "white"
-                            opacity: 0.2
-                            visible: accountBtnMouseArea.containsMouse
-                        }
-                        Rectangle {
-                            width: Style.currentAccountButtonWidth / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            anchors.right: leftHoverContainer.right
-                            color: "white"
-                            opacity: 0.2
-                            visible: accountBtnMouseArea.containsMouse
-                        }
-                        Rectangle {
-                            width: Style.currentAccountButtonWidth / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            anchors.right: leftHoverContainer.right
-                            anchors.bottom: leftHoverContainer.bottom
-                            color: "white"
-                            opacity: 0.2
-                            visible: accountBtnMouseArea.containsMouse
-                        }
+                    background: Rectangle {
+                        color: accountBtnMouseArea.containsMouse ? "white" : "transparent"
+                        opacity: 0.2
                     }
 
                     RowLayout {
@@ -310,7 +316,7 @@ Window {
 
                             Image {
                                 id: currentAccountStateIndicator
-                                source: userModelBackend.isUserConnected(userModelBackend.currentUserId()) ? "qrc:///client/theme/colored/state-ok.svg" : "qrc:///client/theme/colored/state-offline.svg"
+                                source: UserModel.isUserConnected(UserModel.currentUserId()) ? "qrc:///client/theme/colored/state-ok.svg" : "qrc:///client/theme/colored/state-offline.svg"
                                 cache: false
                                 x: currentAccountStateIndicatorBackground.x + 1
                                 y: currentAccountStateIndicatorBackground.y + 1
@@ -326,8 +332,9 @@ Window {
                             Layout.leftMargin: 6
                             Label {
                                 id: currentAccountUser
+
                                 width: Style.currentAccountLabelWidth
-                                text: userModelBackend.currentUserName()
+                                text: UserModel.currentUser.name
                                 elide: Text.ElideRight
                                 color: "white"
                                 font.pixelSize: Style.topLinePixelSize
@@ -336,7 +343,7 @@ Window {
                             Label {
                                 id: currentAccountServer
                                 width: Style.currentAccountLabelWidth
-                                text: userModelBackend.currentUserServer()
+                                text: UserModel.currentUser.server
                                 elide: Text.ElideRight
                                 color: "white"
                                 font.pixelSize: Style.subLinePixelSize
@@ -360,182 +367,81 @@ Window {
                     Layout.fillWidth: true
                 }
 
-                Button {
+                HeaderButton {
                     id: openLocalFolderButton
 
-                    Layout.alignment: Qt.AlignRight
-                    display: AbstractButton.IconOnly
-                    Layout.preferredWidth:  Style.trayWindowHeaderHeight
-                    Layout.preferredHeight: Style.trayWindowHeaderHeight
-                    flat: true
-                    visible: userModelBackend.currentUserHasLocalFolder()
-
+                    visible: UserModel.currentUser.hasLocalFolder
                     icon.source: "qrc:///client/theme/white/folder.svg"
-                    icon.width: Style.headerButtonIconSize
-                    icon.height: Style.headerButtonIconSize
-                    icon.color: "transparent"
-
-                    MouseArea {
-                        id: folderBtnMouseArea
-
-                        anchors.fill: parent
-                        hoverEnabled: Style.hoverEffectsEnabled
-                        onClicked:
-                        {
-                            userModelBackend.openCurrentAccountLocalFolder();
-                        }
-                    }
-
-                    background:
-                        Rectangle {
-                        color: folderBtnMouseArea.containsMouse ? "white" : "transparent"
-                        opacity: 0.2
-                    }
+                    onClicked: UserModel.openCurrentAccountLocalFolder()
                 }
 
-                Button {
+                HeaderButton {
                     id: trayWindowTalkButton
 
-                    Layout.alignment: Qt.AlignRight
-                    display: AbstractButton.IconOnly
-                    Layout.preferredWidth:  Style.trayWindowHeaderHeight
-                    Layout.preferredHeight: Style.trayWindowHeaderHeight
-                    flat: true
-                    visible: userModelBackend.currentServerHasTalk() ? true : false
-
+                    visible: UserModel.currentUser.serverHasTalk
                     icon.source: "qrc:///client/theme/white/talk-app.svg"
-                    icon.width: Style.headerButtonIconSize
-                    icon.height: Style.headerButtonIconSize
-                    icon.color: "transparent"
-
-                    MouseArea {
-                        id: talkBtnMouseArea
-
-                        anchors.fill: parent
-                        hoverEnabled: Style.hoverEffectsEnabled
-                        onClicked:
-                        {
-                            userModelBackend.openCurrentAccountTalk();
-                        }
-                    }
-
-                    background:
-                        Rectangle {
-                        color: talkBtnMouseArea.containsMouse ? "white" : "transparent"
-                        opacity: 0.2
-                    }
+                    onClicked: UserModel.openCurrentAccountTalk()
                 }
 
-                Button {
+                HeaderButton {
                     id: trayWindowAppsButton
-
-                    Layout.alignment: Qt.AlignRight
-                    display: AbstractButton.IconOnly
-                    Layout.preferredWidth:  Style.trayWindowHeaderHeight
-                    Layout.preferredHeight: Style.trayWindowHeaderHeight
-                    flat: true
-
                     icon.source: "qrc:///client/theme/white/more-apps.svg"
-                    icon.width: Style.headerButtonIconSize
-                    icon.height: Style.headerButtonIconSize
-                    icon.color: "transparent"
+                    onClicked: {
+                        /*
+                        // The count() property was introduced in QtQuick.Controls 2.3 (Qt 5.10)
+                        // so we handle this with UserModel.openCurrentAccountServer()
+                        //
+                        // See UserModel::openCurrentAccountServer() to disable this workaround
+                        // in the future for Qt >= 5.10
 
-                    MouseArea {
-                        id: appsBtnMouseArea
-
-                        anchors.fill: parent
-                        hoverEnabled: Style.hoverEffectsEnabled
-                        onClicked:
-                        {
-                            /*
-                            // The count() property was introduced in QtQuick.Controls 2.3 (Qt 5.10)
-                            // so we handle this with userModelBackend.openCurrentAccountServer()
-                            //
-                            // See UserModel::openCurrentAccountServer() to disable this workaround
-                            // in the future for Qt >= 5.10
-
-                            if(appsMenu.count() > 0) {
-                                appsMenu.popup();
-                            } else {
-                                userModelBackend.openCurrentAccountServer();
-                            }
-                            */
-
-                            appsMenu.open();
-                            userModelBackend.openCurrentAccountServer();
+                        if(appsMenu.count() > 0) {
+                            appsMenu.popup();
+                        } else {
+                            UserModel.openCurrentAccountServer();
                         }
+                        */
 
-                        Menu {
-                            id: appsMenu
-                            y: (trayWindowAppsButton.y + trayWindowAppsButton.height + 2)
-                            width: Math.min(contentItem.childrenRect.width + 4, Style.trayWindowWidth / 2)
-                            closePolicy: "CloseOnPressOutside"
-
-                            background: Rectangle {
-                                border.color: Style.ncBlue
-                                radius: 2
-                            }
-
-                            Instantiator {
-                                id: appsMenuInstantiator
-                                model: appsMenuModelBackend
-                                onObjectAdded: appsMenu.insertItem(index, object)
-                                onObjectRemoved: appsMenu.removeItem(object)
-                                delegate: MenuItem {
-                                    text: appName
-                                    font.pixelSize: Style.topLinePixelSize
-                                    icon.source: appIconUrl
-                                    width: contentItem.implicitWidth + leftPadding + rightPadding
-                                    onTriggered: appsMenuModelBackend.openAppUrl(appUrl)
-                                }
-                            }
-                        }
+                        appsMenu.open();
+                        UserModel.openCurrentAccountServer();
                     }
 
-                    background:
-                        Item {
-                        id: rightHoverContainer
-                        height: Style.trayWindowHeaderHeight
-                        width: Style.trayWindowHeaderHeight
-                        Rectangle {
-                            width: Style.trayWindowHeaderHeight / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            color: "white"
-                            opacity: 0.2
-                            visible: appsBtnMouseArea.containsMouse
+                    Menu {
+                        id: appsMenu
+                        y: (trayWindowAppsButton.y + trayWindowAppsButton.height + 2)
+                        readonly property Item listContentItem: contentItem.contentItem
+                        width: Math.min(listContentItem.childrenRect.width + 4, Style.trayWindowWidth / 2)
+                        height: Math.min(implicitHeight, maxMenuHeight)
+                        closePolicy: "CloseOnPressOutside"
+
+                        background: Rectangle {
+                            border.color: Style.menuBorder
+                            radius: 2
                         }
-                        Rectangle {
-                            width: Style.trayWindowHeaderHeight / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            anchors.bottom: rightHoverContainer.bottom
-                            color: "white"
-                            opacity: 0.2
-                            visible: appsBtnMouseArea.containsMouse
-                        }
-                        Rectangle {
-                            width: Style.trayWindowHeaderHeight / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            anchors.bottom: rightHoverContainer.bottom
-                            anchors.right: rightHoverContainer.right
-                            color: "white"
-                            opacity: 0.2
-                            visible: appsBtnMouseArea.containsMouse
-                        }
-                        Rectangle {
-                            id: rightHoverContainerClipper
-                            anchors.right: rightHoverContainer.right
-                            width: Style.trayWindowHeaderHeight / 2
-                            height: Style.trayWindowHeaderHeight / 2
-                            color: "transparent"
-                            clip: true
-                            Rectangle {
-                                width: Style.trayWindowHeaderHeight
-                                height: Style.trayWindowHeaderHeight
-                                anchors.right: rightHoverContainerClipper.right
-                                radius: Style.trayWindowRadius
-                                color: "white"
-                                opacity: 0.2
-                                visible: appsBtnMouseArea.containsMouse
+
+                        Instantiator {
+                            id: appsMenuInstantiator
+                            model: UserAppsModel
+                            onObjectAdded: appsMenu.insertItem(index, object)
+                            onObjectRemoved: appsMenu.removeItem(object)
+                            delegate: MenuItem {
+                                id: appEntry
+                                text: appName
+                                font.pixelSize: Style.topLinePixelSize
+                                icon.source: appIconUrl
+                                width: contentItem.implicitWidth + leftPadding + rightPadding
+                                onTriggered: UserAppsModel.openAppUrl(appUrl)
+                                hoverEnabled: true
+
+                                background: Item {
+                                    width: appsMenu.width
+                                    height: parent.height
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 1
+                                        color: appEntry.hovered ? Style.lightHover : "transparent"
+                                    }
+                                }
                             }
                         }
                     }
@@ -565,16 +471,22 @@ Window {
                 spacing: 0
 
                 MouseArea {
-                    enabled: (path !== "")
+                    enabled: (path !== "" || link !== "")
                     anchors.left: activityItem.left
                     anchors.right: ((shareButton.visible) ? shareButton.left : activityItem.right)
                     height: parent.height
                     anchors.margins: 2
                     hoverEnabled: true
-                    onClicked: Qt.openUrlExternally(path)
+                    onClicked: {
+                        if (path !== "") {
+                            Qt.openUrlExternally(path)
+                        } else {
+                            Qt.openUrlExternally(link)
+                        }
+                    }
                     ToolTip.visible: hovered
                     ToolTip.delay: 1000
-                    ToolTip.text: qsTr("Open sync item locally")
+                    ToolTip.text: path !== "" ? qsTr("Open sync item locally") : qsTr("Open URL")
                     Rectangle {
                         anchors.fill: parent
                         color: (parent.containsMouse ? Style.lightHover : "transparent")
@@ -612,9 +524,10 @@ Window {
 
                     Text {
                         id: activityTextInfo
-                        text: (type === "Activity" || type === "Sync") ? displayPath
+                        text: (type === "Sync") ? displayPath
                             : (type === "File") ? subject
-                            : message
+                            : (type === "Notification") ? message
+                            : ""
                         height: (text === "") ? 0 : activityTextTitle.height
                         width: Style.activityLabelBaseWidth + ((path === "") ? activityItem.height : 0) + ((link === "") ? activityItem.height : 0) - 8
                         elide: Text.ElideRight
@@ -650,7 +563,7 @@ Window {
                     ToolTip.visible: hovered
                     ToolTip.delay: 1000
                     ToolTip.text: qsTr("Open share dialog")
-                    onClicked: systrayBackend.openShareDialog(displayPath,absolutePath)
+                    onClicked: Systray.openShareDialog(displayPath,absolutePath)
                 }
             }
 

@@ -274,6 +274,11 @@
     </message>
     <message>
         <location filename="../src/gui/accountsettings.cpp" line="232"/>
+        <source>Warning</source>
+        <translation>Avviso</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/accountsettings.cpp" line="232"/>
         <source>Account</source>
         <translation>Account</translation>
     </message>
@@ -281,6 +286,13 @@
         <location filename="../src/gui/accountsettings.cpp" line="261"/>
         <source>Show E2E mnemonic</source>
         <translation>Mostra codice mnemonico E2E</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/accountsettings.cpp" line="289"/>
+        <source>You cannot encrypt a folder with contents, please remove the files.
+Wait for the new sync, then encrypt it.</source>
+        <translation>Non puoi cifrare una cartella con contenuti, rimuovi i file.
+Attendi la nuova sincronizzazione, quindi cifrala.</translation>
     </message>
     <message>
         <location filename="../src/gui/accountsettings.cpp" line="589"/>
@@ -678,6 +690,16 @@
         <location filename="../src/libsync/discoveryphase.cpp" line="399"/>
         <source>The server file discovery reply is missing data.</source>
         <translation>La risposta del rilevamento file del server è dati mancanti.</translation>
+    </message>
+</context>
+<context>
+    <name>OCC::EncryptFolderJob</name>
+    <message>
+        <location filename="../src/libsync/encryptfolderjob.cpp" line="72"/>
+        <source>Could not generate the metadata for encryption, Unlocking the folder.
+This can be an issue with your OpenSSL libraries.</source>
+        <translation>Impossibile generare i metadati per la cifratura. Sblocco della cartella.
+Questo può essere un problema delle le tue librerie OpenSSL.</translation>
     </message>
 </context>
 <context>
@@ -1115,7 +1137,7 @@ Se continui normalmente la sincronizzazione provocherai la sovrascrittura di tut
     <message>
         <location filename="../src/gui/folderstatusmodel.cpp" line="213"/>
         <source>There are unresolved conflicts. Click for details.</source>
-        <translation>Ci sono conflitti irrisolti. Clicca per ulteriori dettagli. </translation>
+        <translation>Ci sono conflitti irrisolti. Fai clic per ulteriori dettagli. </translation>
     </message>
     <message>
         <location filename="../src/gui/folderstatusmodel.cpp" line="237"/>
@@ -1377,7 +1399,7 @@ Se continui normalmente la sincronizzazione provocherai la sovrascrittura di tut
     <message>
         <location filename="../src/gui/generalsettings.ui" line="75"/>
         <source>Use &amp;Monochrome Icons</source>
-        <translation>Usa le icone &amp;monocolore</translation>
+        <translation>Usa icone &amp;monocromatiche</translation>
     </message>
     <message>
         <location filename="../src/gui/generalsettings.ui" line="82"/>
@@ -1685,12 +1707,12 @@ I log saranno scritti in %1</translation>
 <context>
     <name>OCC::Logger</name>
     <message>
-        <location filename="../src/libsync/logger.cpp" line="168"/>
+        <location filename="../src/libsync/logger.cpp" line="197"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../src/libsync/logger.cpp" line="169"/>
+        <location filename="../src/libsync/logger.cpp" line="198"/>
         <source>&lt;nobr&gt;File &apos;%1&apos;&lt;br/&gt;cannot be opened for writing.&lt;br/&gt;&lt;br/&gt;The log output can &lt;b&gt;not&lt;/b&gt; be saved!&lt;/nobr&gt;</source>
         <translation>&lt;nobr&gt;Il file &apos;%1&apos;&lt;br/&gt;non può essere aperto in scrittura.&lt;br/&gt;&lt;br/&gt;Il risultato del log &lt;b&gt;non&lt;/b&gt; può essere salvato!&lt;/nobr&gt;</translation>
     </message>
@@ -2721,6 +2743,11 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>Consenti la modifica</translation>
     </message>
     <message>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="158"/>
+        <source>Allow editing</source>
+        <translation>Consenti la modifica</translation>
+    </message>
+    <message>
         <location filename="../src/gui/sharelinkwidget.cpp" line="156"/>
         <source>Read only</source>
         <translation>Sola lettura</translation>
@@ -2736,9 +2763,14 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>Rilascia file (solo caricamento)</translation>
     </message>
     <message>
-        <location filename="../src/gui/sharelinkwidget.cpp" line="189"/>
-        <source>Add note to recipient</source>
-        <translation>Aggiungi nota per destinatario</translation>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="170"/>
+        <source>Allow upload and editing</source>
+        <translation>Consenti caricamento e modifica</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="175"/>
+        <source>File drop (upload only)</source>
+        <translation>Rilascio file (solo caricamento)</translation>
     </message>
     <message>
         <location filename="../src/gui/sharelinkwidget.cpp" line="184"/>
@@ -2746,14 +2778,34 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>Proteggi con password</translation>
     </message>
     <message>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="190"/>
+        <source>Note to recipient</source>
+        <translation>Nota al destinatario</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="200"/>
+        <source>Password protect</source>
+        <translation>Protetta da password</translation>
+    </message>
+    <message>
         <location filename="../src/gui/sharelinkwidget.cpp" line="201"/>
         <source>Expiration Date</source>
         <translation>Data di scadenza</translation>
     </message>
     <message>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="217"/>
+        <source>Set expiration date</source>
+        <translation>Imposta data di scadenza</translation>
+    </message>
+    <message>
         <location filename="../src/gui/sharelinkwidget.cpp" line="220"/>
         <source>Unshare</source>
         <translation>Rimuovi condivisione</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/sharelinkwidget.cpp" line="236"/>
+        <source>Delete share link</source>
+        <translation>Elimina collegamento di condivisione</translation>
     </message>
     <message>
         <location filename="../src/gui/sharelinkwidget.cpp" line="225"/>
@@ -2794,17 +2846,17 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>Condividi con utenti o gruppi...</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="267"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="268"/>
         <source>Copy link</source>
         <translation>Copia collegamento</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="277"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="278"/>
         <source>No results for &apos;%1&apos;</source>
         <translation>Nessun risultato per &apos;%1&apos;</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="364"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="366"/>
         <source>I shared something with you</source>
         <translation>Ho condiviso qualcosa con te</translation>
     </message>
@@ -2822,27 +2874,27 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>può modificare</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="412"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="414"/>
         <source>Can reshare</source>
         <translation>Può ri-condividere</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="422"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="424"/>
         <source>Unshare</source>
         <translation>Rimuovi condivisione</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="431"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="433"/>
         <source>Can create</source>
         <translation>Può creare</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="437"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="439"/>
         <source>Can change</source>
         <translation>Può cambiare</translation>
     </message>
     <message>
-        <location filename="../src/gui/shareusergroupwidget.cpp" line="443"/>
+        <location filename="../src/gui/shareusergroupwidget.cpp" line="445"/>
         <source>Can delete</source>
         <translation>Può eliminare</translation>
     </message>
@@ -2939,7 +2991,7 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>Copia collegamento interno</translation>
     </message>
     <message>
-        <location filename="../src/gui/socketapi.cpp" line="808"/>
+        <location filename="../src/gui/socketapi.cpp" line="807"/>
         <source>Edit</source>
         <translation>Modifica</translation>
     </message>
@@ -3348,74 +3400,74 @@ Non è consigliabile utilizzarlo.</translation>
         <translation>Impossibile aprire il registro di sincronizzazione</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1034"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1044"/>
         <source>File name contains at least one invalid character</source>
         <translation>Il nome del file contiene almeno un carattere non valido</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1276"/>
-        <location filename="../src/libsync/syncengine.cpp" line="1316"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1286"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1326"/>
         <source>Ignored because of the &quot;choose what to sync&quot; blacklist</source>
         <translation>Ignorato in base alla lista nera per la scelta di cosa sincronizzare</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1335"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1345"/>
         <source>Not allowed because you don&apos;t have permission to add subfolders to that folder</source>
         <translation>Non consentito poiché non disponi dei permessi per aggiungere sottocartelle in quella cartella</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1350"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1360"/>
         <source>Not allowed because you don&apos;t have permission to add parent folder</source>
         <translation>Non consentito poiché non disponi dei permessi per aggiungere la cartella superiore</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1357"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1367"/>
         <source>Not allowed because you don&apos;t have permission to add files in that folder</source>
         <translation>Non consentito poiché non disponi dei permessi per aggiungere file in quella cartella</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1382"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1392"/>
         <source>Not allowed to upload this file because it is read-only on the server, restoring</source>
         <translation>Il caricamento di questo file non è consentito poiché è in sola lettura sul server, ripristino</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1398"/>
-        <location filename="../src/libsync/syncengine.cpp" line="1417"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1408"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1427"/>
         <source>Not allowed to remove, restoring</source>
         <translation>Rimozione non consentita, ripristino</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1431"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1441"/>
         <source>Local files and share folder removed.</source>
         <translation>I file locali e la cartella condivisa sono stati rimossi.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1485"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1495"/>
         <source>Move not allowed, item restored</source>
         <translation>Spostamento non consentito, elemento ripristinato</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1496"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1506"/>
         <source>Move not allowed because %1 is read-only</source>
         <translation>Spostamento non consentito poiché %1 è in sola lettura</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1496"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1506"/>
         <source>the destination</source>
         <translation>la destinazione</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1496"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1506"/>
         <source>the source</source>
         <translation>l&apos;origine</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1690"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1700"/>
         <source>Disk space is low: Downloads that would reduce free space below %1 were skipped.</source>
         <translation>Lo spazio su disco è basso: gli scaricamenti che potrebbero ridurre lo spazio libero sotto %1 saranno saltati.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/syncengine.cpp" line="1697"/>
+        <location filename="../src/libsync/syncengine.cpp" line="1707"/>
         <source>There is insufficient space available on the server for some uploads.</source>
         <translation>Spazio disponibile insufficiente sul server per alcuni caricamenti.</translation>
     </message>
@@ -3430,6 +3482,26 @@ Non è consigliabile utilizzarlo.</translation>
 </context>
 <context>
     <name>OCC::Systray</name>
+    <message>
+        <location filename="../src/gui/systray.cpp" line="86"/>
+        <source>Add account</source>
+        <translation>Aggiungi account</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/systray.cpp" line="88"/>
+        <source>Open main dialog</source>
+        <translation>Apri finestra principale</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/systray.cpp" line="90"/>
+        <source>Settings</source>
+        <translation>Impostazioni</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/systray.cpp" line="91"/>
+        <source>Exit %1</source>
+        <translation>Esci da %1</translation>
+    </message>
     <message>
         <location filename="../src/gui/systray.cpp" line="55"/>
         <source>%1: %2</source>
@@ -3448,7 +3520,7 @@ Non è consigliabile utilizzarlo.</translation>
         <location filename="../src/libsync/theme.cpp" line="358"/>
         <location filename="../src/libsync/theme.cpp" line="368"/>
         <source>&lt;p&gt;Version %1. For more information please click &lt;a href=&apos;%2&apos;&gt;here&lt;/a&gt;.&lt;/p&gt;</source>
-        <translation>&lt;p&gt;Versione %1. Per ulteriori informazioni fai clic &lt;a href=&apos;%2&apos;&gt;qui&lt;/a&gt;.&lt;/p&gt;</translation>
+        <translation>&lt;p&gt;Versione %1. Per ulteriori informazioni, fai clic &lt;a href=&apos;%2&apos;&gt;qui&lt;/a&gt;.&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../src/libsync/theme.cpp" line="372"/>
@@ -3459,27 +3531,27 @@ Non è consigliabile utilizzarlo.</translation>
 <context>
     <name>OCC::User</name>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="319"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="323"/>
         <source>Retry all uploads</source>
         <translation>Riprova tutti i caricamenti</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="368"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="372"/>
         <source>You renamed</source>
         <translation>Hai rinominato</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="370"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="374"/>
         <source>You deleted</source>
         <translation>Hai eliminato</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="372"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="376"/>
         <source>You created</source>
         <translation>Hai creato</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="374"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="378"/>
         <source>You changed</source>
         <translation>Hai modificato</translation>
     </message>
@@ -3487,22 +3559,22 @@ Non è consigliabile utilizzarlo.</translation>
 <context>
     <name>OCC::UserModel</name>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="688"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="705"/>
         <source>Confirm Account Removal</source>
         <translation>Conferma rimozione account</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="689"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="706"/>
         <source>&lt;p&gt;Do you really want to remove the connection to the account &lt;i&gt;%1&lt;/i&gt;?&lt;/p&gt;&lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This will &lt;b&gt;not&lt;/b&gt; delete any files.&lt;/p&gt;</source>
         <translation>&lt;p&gt;Vuoi davvero rimuovere la connessione all&apos;account &lt;i&gt;%1&lt;/i&gt;?&lt;/p&gt;&lt;p&gt;&lt;b&gt;Nota:&lt;/b&gt; ciò &lt;b&gt;non&lt;/b&gt; eliminerà alcun file.&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="694"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="711"/>
         <source>Remove connection</source>
         <translation>Rimuovi connessione</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserModel.cpp" line="695"/>
+        <location filename="../src/gui/tray/UserModel.cpp" line="712"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
@@ -3523,12 +3595,12 @@ Non è consigliabile utilizzarlo.</translation>
 <context>
     <name>OCC::WebFlowCredentials</name>
     <message>
-        <location filename="../src/gui/creds/webflowcredentials.cpp" line="169"/>
+        <location filename="../src/gui/creds/webflowcredentials.cpp" line="162"/>
         <source>You have been logged out of %1 as user %2. Please login again</source>
         <translation>Sei stato disconnesso da %1 come utente %2. Accedi nuovamente</translation>
     </message>
     <message>
-        <location filename="../src/gui/creds/webflowcredentials.cpp" line="193"/>
+        <location filename="../src/gui/creds/webflowcredentials.cpp" line="186"/>
         <source>Please login with the user: %1</source>
         <translation>Accedi con l&apos;utente: %1</translation>
     </message>
@@ -3952,6 +4024,24 @@ Non è consigliabile utilizzarlo.</translation>
     </message>
 </context>
 <context>
+    <name>UserLine</name>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="149"/>
+        <source>Log out</source>
+        <translation>Esci</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="149"/>
+        <source>Log in</source>
+        <translation>Accedi</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="169"/>
+        <source>Remove Account</source>
+        <translation>Rimuovi account</translation>
+    </message>
+</context>
+<context>
     <name>Utility</name>
     <message>
         <location filename="../src/common/utility.cpp" line="130"/>
@@ -4025,6 +4115,49 @@ Non è consigliabile utilizzarlo.</translation>
         <location filename="../src/common/checksums.cpp" line="252"/>
         <source>The downloaded file does not match the checksum, it will be resumed.</source>
         <translation>Il file scaricato non verifica il codice di controllo, sarà ripristinato.</translation>
+    </message>
+</context>
+<context>
+    <name>Window</name>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="149"/>
+        <source>Resume sync for all</source>
+        <translation>Riprendi la sincronizzazione per tutto</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="149"/>
+        <source>Pause sync for all</source>
+        <translation>Sospendi la sincronizzazione per tutto</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="213"/>
+        <source>Add account</source>
+        <translation>Aggiungi account</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="251"/>
+        <source>Settings</source>
+        <translation>Impostazioni</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="268"/>
+        <source>Exit</source>
+        <translation>Esci</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="489"/>
+        <source>Open sync item locally</source>
+        <translation>Apri localmente l&apos;elemento di sincronizzazione</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="489"/>
+        <source>Open URL</source>
+        <translation>Apri URL</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/Window.qml" line="565"/>
+        <source>Open share dialog</source>
+        <translation>Apri finestra di condivisione</translation>
     </message>
 </context>
 <context>

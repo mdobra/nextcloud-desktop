@@ -218,12 +218,26 @@ void FolderMan::setupFoldersHelper(QSettings &settings, AccountStatePtr account,
                 socketApi()->slotUnregisterPath(folderAlias);
                 auto settings = account->settings();
 
+                auto journalFileMoveSuccess = true;
+                // Due to db logic can't be sure which of these file exist.
+                if (oldJournal.exists()) {
+                    journalFileMoveSuccess &= oldJournal.rename(folderDefinition.journalPath);
+                }
+                if (oldJournalShm.exists()) {
+                    journalFileMoveSuccess &= oldJournalShm.rename(folderDefinition.journalPath.append("-shm"));
+                }
+                if (oldJournalWal.exists()) {
+                    journalFileMoveSuccess &= oldJournalWal.rename(folderDefinition.journalPath.append("-wal"));
+                }
+
+                if (!journalFileMoveSuccess) {
+                    qCWarning(lcFolderMan) << "Wasn't able to move pre-2.7 syncjournal database files to new location. One-time loss off sync settings possible.";
+                } else {
+                    qCInfo(lcFolderMan) << "Successfully migrated syncjournal database.";
+                }
+
                 Folder *f = addFolderInternal(folderDefinition, account.data());
                 f->saveToSettings();
-
-                oldJournal.remove();
-                oldJournalShm.remove();
-                oldJournalWal.remove();
 
                 return;
             }
@@ -930,6 +944,11 @@ Folder *FolderMan::addFolderInternal(FolderDefinition folderDefinition,
     }
 
     auto folder = new Folder(folderDefinition, accountState, this);
+
+    if (_navigationPaneHelper.showInExplorerNavigationPane() && folderDefinition.navigationPaneClsid.isNull()) {
+        folder->setNavigationPaneClsid(QUuid::createUuid());
+        folder->saveToSettings();
+    }
 
     qCInfo(lcFolderMan) << "Adding folder to Folder Map " << folder << folder->alias();
     _folderMap[folder->alias()] = folder;

@@ -137,7 +137,6 @@ namespace {
         // and we have a `forKey` static function that returns
         // an instance of this class
         PKeyCtx(PKeyCtx&& other)
-            : _ctx(nullptr)
         {
             std::swap(_ctx, other._ctx);
         }
@@ -159,12 +158,9 @@ namespace {
     private:
         Q_DISABLE_COPY(PKeyCtx)
 
-        PKeyCtx()
-            : _ctx(nullptr)
-        {
-        }
+        PKeyCtx() = default;
 
-        EVP_PKEY_CTX* _ctx;
+        EVP_PKEY_CTX* _ctx = nullptr;
     };
 
     class PKey {
@@ -179,7 +175,6 @@ namespace {
         // and we have a static functions that return
         // an instance of this class
         PKey(PKey&& other)
-            : _pkey(nullptr)
         {
             std::swap(_pkey, other._pkey);
         }
@@ -217,16 +212,10 @@ namespace {
     private:
         Q_DISABLE_COPY(PKey)
 
-        PKey()
-            : _pkey(nullptr)
-        {
-        }
+        PKey() = default;
 
-        EVP_PKEY* _pkey;
+        EVP_PKEY* _pkey = nullptr;
     };
-
-
-
 
     QByteArray BIO2ByteArray(Bio &b) {
         int pending = BIO_ctrl_pending(b);
@@ -370,9 +359,9 @@ QByteArray encryptPrivateKey(
     cipherTXT.append(tag);
 
     QByteArray result = cipherTXT.toBase64();
-    result += "fA==";
+    result += '|';
     result += iv.toBase64();
-    result += "fA==";
+    result += '|';
     result += salt.toBase64();
 
     return result;
@@ -382,11 +371,11 @@ QByteArray decryptPrivateKey(const QByteArray& key, const QByteArray& data) {
     qCInfo(lcCse()) << "decryptStringSymmetric key: " << key;
     qCInfo(lcCse()) << "decryptStringSymmetric data: " << data;
 
-    int sep = data.indexOf("fA==");
+    int sep = data.indexOf('|');
     qCInfo(lcCse()) << "sep at" << sep;
 
     QByteArray cipherTXT64 = data.left(sep);
-    QByteArray ivB64 = data.right(data.size() - sep - 4);
+    QByteArray ivB64 = data.right(data.size() - sep - 1);
 
     qCInfo(lcCse()) << "decryptStringSymmetric cipherTXT: " << cipherTXT64;
     qCInfo(lcCse()) << "decryptStringSymmetric IV: " << ivB64;
@@ -458,11 +447,11 @@ QByteArray decryptStringSymmetric(const QByteArray& key, const QByteArray& data)
     qCInfo(lcCse()) << "decryptStringSymmetric key: " << key;
     qCInfo(lcCse()) << "decryptStringSymmetric data: " << data;
 
-    int sep = data.indexOf("fA==");
+    int sep = data.indexOf('|');
     qCInfo(lcCse()) << "sep at" << sep;
 
     QByteArray cipherTXT64 = data.left(sep);
-    QByteArray ivB64 = data.right(data.size() - sep - 4);
+    QByteArray ivB64 = data.right(data.size() - sep - 1);
 
     qCInfo(lcCse()) << "decryptStringSymmetric cipherTXT: " << cipherTXT64;
     qCInfo(lcCse()) << "decryptStringSymmetric IV: " << ivB64;
@@ -617,7 +606,7 @@ QByteArray encryptStringSymmetric(const QByteArray& key, const QByteArray& data)
     cipherTXT.append(tag);
 
     QByteArray result = cipherTXT.toBase64();
-    result += "fA==";
+    result += '|';
     result += iv.toBase64();
 
     return result;
@@ -743,7 +732,7 @@ void ClientSideEncryption::setAccount(AccountPtr account)
 void ClientSideEncryption::initialize()
 {
     qCInfo(lcCse()) << "Initializing";
-    if (!_account->capabilities().clientSideEncryptionAvaliable()) {
+    if (!_account->capabilities().clientSideEncryptionAvailable()) {
         qCInfo(lcCse()) << "No Client side encryption available on server.";
         emit initializationFinished();
         return;
@@ -1142,8 +1131,8 @@ void ClientSideEncryption::decryptPrivateKey(const QByteArray &key) {
 
             // split off salt
             // Todo better place?
-            auto pos = key.lastIndexOf("fA==");
-            QByteArray salt = QByteArray::fromBase64(key.mid(pos + 4));
+            auto pos = key.lastIndexOf('|');
+            QByteArray salt = QByteArray::fromBase64(key.mid(pos + 1));
             auto key2 = key.left(pos);
 
             auto pass = EncryptionHelper::generatePassword(mnemonic, salt);
@@ -1223,17 +1212,19 @@ void ClientSideEncryption::fetchFolderEncryptedStatus() {
     getEncryptedStatus->start();
 }
 
-void ClientSideEncryption::folderEncryptedStatusFetched(const QMap<QString, bool>& result)
+void ClientSideEncryption::folderEncryptedStatusFetched(const QHash<QString, bool>& result)
 {
     _refreshingEncryptionStatus = false;
     _folder2encryptedStatus = result;
     qCDebug(lcCse) << "Retrieved correctly the encrypted status of the folders." << result;
+    emit folderEncryptedStatusFetchDone(result);
 }
 
 void ClientSideEncryption::folderEncryptedStatusError(int error)
 {
     _refreshingEncryptionStatus = false;
     qCDebug(lcCse) << "Failed to retrieve the status of the folders." << error;
+    emit folderEncryptedStatusFetchDone({});
 }
 
 FolderMetadata::FolderMetadata(AccountPtr account, const QByteArray& metadata, int statusCode) : _account(account)

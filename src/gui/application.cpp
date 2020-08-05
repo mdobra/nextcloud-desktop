@@ -408,10 +408,10 @@ void Application::setupLogging()
     // might be called from second instance
     auto logger = Logger::instance();
     logger->setLogFile(_logFile);
-    logger->setLogDir(_logDir);
-    logger->setLogExpire(_logExpire);
-    logger->setLogFlush(_logFlush);
-    logger->setLogDebug(_logDebug);
+    logger->setLogDir(!_logDir.isEmpty() ? _logDir : ConfigFile().logDir());
+    logger->setLogExpire(_logExpire > 0 ? _logExpire : ConfigFile().logExpire());
+    logger->setLogFlush(_logFlush || ConfigFile().logFlush());
+    logger->setLogDebug(_logDebug || ConfigFile().logDebug());
     if (!logger->isLoggingToFile() && ConfigFile().automaticLogDir()) {
         logger->setupTemporaryFolderLogDir();
     }
@@ -433,14 +433,14 @@ void Application::slotParseMessage(const QString &msg, QObject *)
         QStringList options = msg.mid(lengthOfMsgPrefix).split(QLatin1Char('|'));
         parseOptions(options);
         setupLogging();
-    } else if (msg.startsWith(QLatin1String("MSG_SHOWSETTINGS"))) {
+    } else if (msg.startsWith(QLatin1String("MSG_SHOWMAINDIALOG"))) {
         qCInfo(lcApplication) << "Running for" << _startedAt.elapsed() / 1000.0 << "sec";
         if (_startedAt.elapsed() < 10 * 1000) {
             // This call is mirrored with the one in int main()
-            qCWarning(lcApplication) << "Ignoring MSG_SHOWSETTINGS, possibly double-invocation of client via session restore and auto start";
+            qCWarning(lcApplication) << "Ignoring MSG_SHOWMAINDIALOG, possibly double-invocation of client via session restore and auto start";
             return;
         }
-        showSettingsDialog();
+        showMainDialog();
     }
 }
 
@@ -662,9 +662,9 @@ bool Application::versionOnly()
     return _versionOnly;
 }
 
-void Application::showSettingsDialog()
+void Application::showMainDialog()
 {
-    _gui->slotShowSettings();
+    _gui->slotOpenMainDialog();
 }
 
 void Application::slotGuiIsShowingSettings()

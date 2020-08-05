@@ -153,13 +153,17 @@ QVariant FolderStatusModel::data(const QModelIndex &index, int role) const
             return QString(QLatin1String("<qt>") + Utility::escape(x._size < 0 ? x._name : tr("%1 (%2)").arg(x._name, Utility::octetsToString(x._size))) + QLatin1String("</qt>"));
         case Qt::CheckStateRole:
             return x._checked;
-        case Qt::DecorationRole:
-            if (_accountState->account()->e2e()->isFolderEncrypted(x._path)) {
+        case Qt::DecorationRole: {
+            Q_ASSERT(x._folder->remotePath().startsWith('/'));
+            const auto rootPath = x._folder->remotePath().mid(1);
+            const auto absoluteRemotePath = rootPath.isEmpty() ? x._path : rootPath + '/' + x._path;
+            if (_accountState->account()->e2e()->isFolderEncrypted(absoluteRemotePath)) {
                 return QIcon(QLatin1String(":/client/theme/lock-https.svg"));
-            } else if (x._size > 0 && _accountState->account()->e2e()->isAnyParentFolderEncrypted(x._path)) {
+            } else if (x._size > 0 && _accountState->account()->e2e()->isAnyParentFolderEncrypted(absoluteRemotePath)) {
                 return QIcon(QLatin1String(":/client/theme/lock-broken.svg"));
             }
             return QFileIconProvider().icon(x._isExternal ? QFileIconProvider::Network : QFileIconProvider::Folder);
+        }
         case Qt::ForegroundRole:
             if (x._isUndecided) {
                 return QColor(Qt::red);
@@ -581,12 +585,6 @@ void FolderStatusModel::fetchMore(const QModelIndex &parent)
         path += info->_path;
     }
 
-		//TODO: This is the correct place, but this doesn't seems to be the right
-		// Way to call fetchFolderEncryptedStatus.
-		if (_accountState->account()->capabilities().clientSideEncryptionAvaliable()) {
-			_accountState->account()->e2e()->fetchFolderEncryptedStatus();
-		}
-
     auto *job = new LsColJob(_accountState->account(), path, this);
     info->_fetchingJob = job;
     job->setProperties(QList<QByteArray>() << "resourcetype"
@@ -696,7 +694,14 @@ void FolderStatusModel::slotUpdateDirectories(const QStringList &list)
         newInfo._pathIdx << newSubs.size();
         newInfo._isExternal = permissionMap.value(removeTrailingSlash(path)).toString().contains("M");
         newInfo._path = relativePath;
-        newInfo._name = removeTrailingSlash(relativePath).split('/').last();
+
+        SyncJournalFileRecord rec;
+        parentInfo->_folder->journalDb()->getFileRecordByE2eMangledName(removeTrailingSlash(relativePath), &rec);
+        if (rec.isValid()) {
+            newInfo._name = removeTrailingSlash(rec._path).split('/').last();
+        } else {
+            newInfo._name = removeTrailingSlash(relativePath).split('/').last();
+        }
 
         const auto& folderInfo = job->_folderInfos.value(path);
         newInfo._size = folderInfo.size;

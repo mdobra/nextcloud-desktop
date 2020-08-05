@@ -49,7 +49,7 @@
 #include "common/c_jhash.h"
 #include "common/syncjournalfilerecord.h"
 
-Q_LOGGING_CATEGORY(lcCSync, "sync.csync.csync", QtInfoMsg)
+Q_LOGGING_CATEGORY(lcCSync, "nextcloud.sync.csync.csync", QtInfoMsg)
 
 
 csync_s::csync_s(const char *localUri, OCC::SyncJournalDb *statedb)
@@ -340,5 +340,6 @@ std::unique_ptr<csync_file_stat_t> csync_file_stat_s::fromSyncJournalFileRecord(
     st->has_ignored_files = rec._serverHasIgnoredFiles;
     st->checksumHeader = rec._checksumHeader;
     st->e2eMangledName = rec._e2eMangledName;
+    st->isE2eEncrypted = rec._isE2eEncrypted;
     return st;
 }

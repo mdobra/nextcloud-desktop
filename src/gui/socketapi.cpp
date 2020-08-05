@@ -87,8 +87,8 @@ static QString buildMessage(const QString &verb, const QString &path, const QStr
 
 namespace OCC {
 
-Q_LOGGING_CATEGORY(lcSocketApi, "gui.socketapi", QtInfoMsg)
-Q_LOGGING_CATEGORY(lcPublicLink, "gui.socketapi.publiclink", QtInfoMsg)
+Q_LOGGING_CATEGORY(lcSocketApi, "nextcloud.gui.socketapi", QtInfoMsg)
+Q_LOGGING_CATEGORY(lcPublicLink, "nextcloud.gui.socketapi.publiclink", QtInfoMsg)
 
 
 class BloomFilter
@@ -799,7 +799,6 @@ void SocketApi::command_GET_MENU_ITEMS(const QString &argument, OCC::SocketListe
     FileData fileData = hasSeveralFiles ? FileData{} : FileData::get(argument);
     bool isOnTheServer = fileData.journalRecord().isValid();
     auto flagString = isOnTheServer ? QLatin1String("::") : QLatin1String(":d:");
-    auto capabilities = fileData.folder->accountState()->account()->capabilities();
 
     if (fileData.folder && fileData.folder->accountState()->isConnected()) {
         DirectEditor* editor = getDirectEditorForLocalFile(fileData.localPath);

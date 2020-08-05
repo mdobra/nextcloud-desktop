@@ -858,6 +858,69 @@ void SyncEngine::startSync()
         return shouldDiscoverLocally(path);
     };
 
+    // If needed, make sure we have up to date E2E information before the
+    // discovery phase, otherwise we start right away
+    if (_account->capabilities().clientSideEncryptionAvailable()) {
+        connect(_account->e2e(), &ClientSideEncryption::folderEncryptedStatusFetchDone,
+                this, &SyncEngine::onFolderEncryptedStatusFetchDone);
+        _account->e2e()->fetchFolderEncryptedStatus();
+    } else {
+        slotStartDiscovery();
+    }
+}
+
+void SyncEngine::onFolderEncryptedStatusFetchDone(const QHash<QString, bool> &values)
+{
+    disconnect(_account->e2e(), &ClientSideEncryption::folderEncryptedStatusFetchDone,
+               this, &SyncEngine::onFolderEncryptedStatusFetchDone);
+
+    Q_ASSERT(_remotePath.startsWith('/'));
+    const auto rootPath = [=]() {
+        const auto result = _remotePath;
+        if (result.startsWith('/')) {
+            return result.mid(1);
+        } else {
+            return result;
+        }
+    }();
+
+    std::for_each(values.constKeyValueBegin(), values.constKeyValueEnd(), [=](const std::pair<QString, bool> &pair) {
+        const auto key = pair.first;
+        const auto value = pair.second;
+
+        if (!key.startsWith(rootPath)) {
+            return;
+        }
+
+        Q_ASSERT(key.endsWith('/'));
+        const auto path = key.mid(rootPath.length()).chopped(1);
+
+        if (path.isEmpty()) {
+            // We don't store metadata about the root
+            return;
+        }
+
+        SyncJournalFileRecord rec;
+        _journal->getFileRecordByE2eMangledName(path, &rec);
+
+        if (!rec.isValid()) {
+            _journal->getFileRecord(path, &rec);
+        }
+
+        if (!rec.isValid()) {
+            // We don't know that folder yet anyway...
+            return;
+        }
+
+        rec._isE2eEncrypted = value;
+        _journal->setFileRecord(rec);
+    });
+
+    slotStartDiscovery();
+}
+
+void SyncEngine::slotStartDiscovery()
+{
     bool ok = false;
     auto selectiveSyncBlackList = _journal->getSelectiveSyncList(SyncJournalDb::SelectiveSyncBlackList, &ok);
     if (ok) {
@@ -975,6 +1038,16 @@ void SyncEngine::slotDiscoveryJobFinished(int discoveryResult)
     } else {
         // Commits a possibly existing (should not though) transaction and starts a new one for the propagate phase
         _journal->commitIfNeededAndStartNewTransaction("Post discovery");
+    }
+
+    // FIXME: This is a reasonable safety check, but specifically just a hotfix.
+    // See: https://github.com/nextcloud/desktop/issues/1433
+    // It's still unclear why we can get an empty FileMap even though folder isn't empty
+    // For now: Re-check if folder is really empty, if not bail out
+    if (_csync_ctx.data()->local.files.empty() && QDir(_localPath).entryInfoList(QDir::NoDotAndDotDot).count() > 0) {
+        qCWarning(lcEngine) << "Received local tree with empty FileMap but sync folder isn't empty. Won't reconcile.";
+        finalize(false);
+        return;
     }
 
     _progressInfo->_currentDiscoveredRemoteFolder.clear();

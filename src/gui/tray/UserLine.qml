@@ -5,6 +5,7 @@ import QtQuick.Layouts 1.2
 
 // Custom qml modules are in /theme (and included by resources.qrc)
 import Style 1.0
+import com.nextcloud.desktopclient 1.0
 
 MenuItem {
     id: userLine
@@ -21,6 +22,7 @@ MenuItem {
                 Layout.preferredWidth: (userLineLayout.width * (5/6))
                 Layout.preferredHeight: (userLineLayout.height)
                 display: AbstractButton.IconOnly
+                hoverEnabled: true
                 flat: true
 
                 MouseArea {
@@ -31,15 +33,22 @@ MenuItem {
                     }
                     onClicked: {
                         if (!isCurrentUser) {
-                            userModelBackend.switchCurrentUser(id)
+                            UserModel.switchCurrentUser(id)
                         } else {
                             accountMenu.close()
                         }
                     }
                 }
 
-                background: Rectangle {
-                    color: "transparent"
+
+                background: Item {
+                    height: parent.height
+                    width: parent.menu.width
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 1
+                        color: parent.parent.hovered ? Style.lightHover : "transparent"
+                    }
                 }
 
                 RowLayout {
@@ -132,25 +141,47 @@ MenuItem {
                     width: 120
 
                     background: Rectangle {
-                        border.color: Style.ncBlue
+                        border.color: Style.menuBorder
                         radius: 2
                     }
 
                     MenuItem {
                         text: isConnected ? qsTr("Log out") : qsTr("Log in")
                         font.pixelSize: Style.topLinePixelSize
+                        hoverEnabled: true
                         onClicked: {
-                            isConnected ? userModelBackend.logout(index) : userModelBackend.login(index)
+                            isConnected ? UserModel.logout(index) : UserModel.login(index)
                             accountMenu.close()
+                        }
+
+                        background: Item {
+                            height: parent.height
+                            width: parent.menu.width
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                color: parent.parent.hovered ? Style.lightHover : "transparent"
+                            }
                         }
                     }
 
                     MenuItem {
                         text: qsTr("Remove Account")
                         font.pixelSize: Style.topLinePixelSize
+                        hoverEnabled: true
                         onClicked: {
-                            userModelBackend.removeAccount(index)
+                            UserModel.removeAccount(index)
                             accountMenu.close()
+                        }
+
+                        background: Item {
+                            height: parent.height
+                            width: parent.menu.width
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: 1
+                                color: parent.parent.hovered ? Style.lightHover : "transparent"
+                            }
                         }
                     }
                 }

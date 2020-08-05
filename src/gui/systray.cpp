@@ -23,7 +23,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickWindow>
 #include <QScreen>
+#include <QMenu>
 
 #ifdef USE_FDO_NOTIFICATIONS
 #include <QDBusConnection>
@@ -49,14 +51,46 @@ Systray *Systray::instance()
     return _instance;
 }
 
-Systray::Systray()
-    : _trayEngine(new QQmlApplicationEngine(this))
+void Systray::setTrayEngine(QQmlApplicationEngine *trayEngine)
 {
+    _trayEngine = trayEngine;
+
     _trayEngine->addImportPath("qrc:/qml/theme");
     _trayEngine->addImageProvider("avatars", new ImageProvider);
-    _trayEngine->rootContext()->setContextProperty("userModelBackend", UserModel::instance());
-    _trayEngine->rootContext()->setContextProperty("appsMenuModelBackend", UserAppsModel::instance());
-    _trayEngine->rootContext()->setContextProperty("systrayBackend", this);
+}
+
+Systray::Systray()
+    : QSystemTrayIcon(nullptr)
+{
+    qmlRegisterSingletonType<UserModel>("com.nextcloud.desktopclient", 1, 0, "UserModel",
+        [](QQmlEngine *, QJSEngine *) -> QObject * {
+            return UserModel::instance();
+        }
+    );
+
+    qmlRegisterSingletonType<UserAppsModel>("com.nextcloud.desktopclient", 1, 0, "UserAppsModel",
+        [](QQmlEngine *, QJSEngine *) -> QObject * {
+            return UserAppsModel::instance();
+        }
+    );
+
+    qmlRegisterSingletonType<Systray>("com.nextcloud.desktopclient", 1, 0, "Systray",
+        [](QQmlEngine *, QJSEngine *) -> QObject * {
+            return Systray::instance();
+        }
+    );
+
+#ifndef Q_OS_MAC
+    auto contextMenu = new QMenu();
+    if (AccountManager::instance()->accounts().isEmpty()) {
+        contextMenu->addAction(tr("Add account"), this, &Systray::openAccountWizard);
+    } else {
+        contextMenu->addAction(tr("Open main dialog"), this, &Systray::openMainDialog);
+    }
+    contextMenu->addAction(tr("Settings"), this, &Systray::openSettings);
+    contextMenu->addAction(tr("Exit %1").arg(Theme::instance()->appNameGUI()), this, &Systray::shutdown);
+    setContextMenu(contextMenu);
+#endif
 
     connect(UserModel::instance(), &UserModel::newUserSelected,
         this, &Systray::slotNewUserSelected);
@@ -67,18 +101,30 @@ Systray::Systray()
 
 void Systray::create()
 {
-    if (!AccountManager::instance()->accounts().isEmpty()) {
-        _trayEngine->rootContext()->setContextProperty("activityModel", UserModel::instance()->currentActivityModel());
+    if (_trayEngine) {
+        if (!AccountManager::instance()->accounts().isEmpty()) {
+            _trayEngine->rootContext()->setContextProperty("activityModel", UserModel::instance()->currentActivityModel());
+        }
+        _trayEngine->load(QStringLiteral("qrc:/qml/src/gui/tray/Window.qml"));
     }
-    _trayEngine->load(QStringLiteral("qrc:/qml/src/gui/tray/Window.qml"));
     hideWindow();
     emit activated(QSystemTrayIcon::ActivationReason::Unknown);
+
+    const auto folderMap = FolderMan::instance()->map();
+    for (const auto *folder : folderMap) {
+        if (!folder->syncPaused()) {
+            _syncIsPaused = false;
+            break;
+        }
+    }
 }
 
 void Systray::slotNewUserSelected()
 {
-    // Change ActivityModel
-    _trayEngine->rootContext()->setContextProperty("activityModel", UserModel::instance()->currentActivityModel());
+    if (_trayEngine) {
+        // Change ActivityModel
+        _trayEngine->rootContext()->setContextProperty("activityModel", UserModel::instance()->currentActivityModel());
+    }
 
     // Rebuild App list
     UserAppsModel::instance()->buildAppList();
@@ -146,6 +192,14 @@ void Systray::pauseResumeSync()
 /* Helper functions for cross-platform tray icon position and taskbar orientation detection */
 /********************************************************************************************/
 
+void Systray::positionWindow(QQuickWindow *window) const
+{
+    window->setScreen(currentScreen());
+
+    const auto position = computeWindowPosition(window->width(), window->height());
+    window->setPosition(position);
+}
+
 QScreen *Systray::currentScreen() const
 {
     const auto screens = QGuiApplication::screens();
@@ -158,13 +212,6 @@ QScreen *Systray::currentScreen() const
     }
 
     return nullptr;
-}
-
-int Systray::currentScreenIndex() const
-{
-    const auto screens = QGuiApplication::screens();
-    const auto screenIndex = screens.indexOf(currentScreen());
-    return screenIndex > 0 ? screenIndex : 0;
 }
 
 Systray::TaskBarPosition Systray::taskbarOrientation() const
@@ -229,14 +276,14 @@ QRect Systray::taskbarGeometry() const
 #elif defined(Q_OS_MACOS)
     // Finder bar is always 22px height on macOS (when treating as effective pixels)
     auto screenWidth = currentScreenRect().width();
-    return QRect(0, 0, screenWidth, 22);
+    return {0, 0, screenWidth, 22};
 #else
     if (taskbarOrientation() == TaskBarPosition::Bottom || taskbarOrientation() == TaskBarPosition::Top) {
         auto screenWidth = currentScreenRect().width();
-        return QRect(0, 0, screenWidth, 32);
+        return {0, 0, screenWidth, 32};
     } else {
         auto screenHeight = currentScreenRect().height();
-        return QRect(0, 0, 32, screenHeight);
+        return {0, 0, 32, screenHeight};
     }
 #endif
 }
@@ -244,8 +291,8 @@ QRect Systray::taskbarGeometry() const
 QRect Systray::currentScreenRect() const
 {
     const auto screen = currentScreen();
-    const auto rect = screen->geometry();
-    return rect.translated(screen->virtualGeometry().topLeft());
+    Q_ASSERT(screen);
+    return screen->geometry();
 }
 
 QPoint Systray::computeWindowReferencePoint() const
@@ -343,7 +390,7 @@ QPoint Systray::calcTrayIconCenter() const
     return trayIconCenter;
 #else
     // On Linux, fall back to mouse position (assuming tray icon is activated by mouse click)
-    return QCursor::pos();
+    return QCursor::pos(currentScreen());
 #endif
 }
 
