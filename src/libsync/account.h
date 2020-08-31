@@ -51,7 +51,7 @@ namespace OCC {
 
 class AbstractCredentials;
 class Account;
-typedef QSharedPointer<Account> AccountPtr;
+using AccountPtr = QSharedPointer<Account>;
 class AccessManager;
 class SimpleNetworkJob;
 
@@ -62,7 +62,7 @@ class SimpleNetworkJob;
 class AbstractSslErrorHandler
 {
 public:
-    virtual ~AbstractSslErrorHandler() {}
+    virtual ~AbstractSslErrorHandler() = default;
     virtual bool handleErrors(QList<QSslError>, const QSslConfiguration &conf, QList<QSslCertificate> *, AccountPtr) = 0;
 };
 

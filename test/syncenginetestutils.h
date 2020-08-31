@@ -66,7 +66,7 @@ public:
 class FileModifier
 {
 public:
-    virtual ~FileModifier() { }
+    virtual ~FileModifier() = default;
     virtual void remove(const QString &relativePath) = 0;
     virtual void insert(const QString &relativePath, qint64 size = 64, char contentChar = 'W') = 0;
     virtual void setContents(const QString &relativePath, char contentChar) = 0;
@@ -238,7 +238,7 @@ public:
                 etag = file->etag;
             return file;
         }
-        return 0;
+        return nullptr;
     }
 
     FileInfo *createDir(const QString &relativePath) {
@@ -816,7 +816,7 @@ public:
 
 protected:
     QNetworkReply *createRequest(Operation op, const QNetworkRequest &request,
-                                         QIODevice *outgoingData = 0) {
+                                         QIODevice *outgoingData = nullptr) {
         if (_override) {
             if (auto reply = _override(op, request, outgoingData))
                 return reply;

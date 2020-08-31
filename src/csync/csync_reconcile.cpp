@@ -20,7 +20,7 @@
 
 #include "config_csync.h"
 
-#include <assert.h>
+#include <cassert>
 #include "csync_private.h"
 #include "csync_reconcile.h"
 #include "csync_util.h"
@@ -34,7 +34,7 @@ Q_LOGGING_CATEGORY(lcReconcile, "nextcloud.sync.csync.reconciler", QtInfoMsg)
 
 // Needed for PRIu64 on MinGW in C++ mode.
 #define __STDC_FORMAT_MACROS
-#include "inttypes.h"
+#include <cinttypes>
 
 /* Check if a file is ignored because one parent is ignored.
  * return the node of the ignored directoy if it's the case, or \c nullptr if it is not ignored */
@@ -343,7 +343,9 @@ static void _csync_merge_algorithm_visitor(csync_file_stat_t *cur, CSYNC * ctx) 
                             auto remoteNode = ctx->current == REMOTE_REPLICA ? cur : other;
                             auto localNode = ctx->current == REMOTE_REPLICA ? other : cur;
                             remoteNode->instruction = CSYNC_INSTRUCTION_NONE;
-                            localNode->instruction = up._modtime == localNode->modtime ? CSYNC_INSTRUCTION_UPDATE_METADATA : CSYNC_INSTRUCTION_SYNC;
+                            localNode->instruction = up._modtime == localNode->modtime && up._size == localNode->size ?
+                                CSYNC_INSTRUCTION_UPDATE_METADATA : CSYNC_INSTRUCTION_SYNC;
+
                             // Update the etag and other server metadata in the journal already
                             // (We can't use a typical CSYNC_INSTRUCTION_UPDATE_METADATA because
                             // we must not store the size/modtime from the file system)

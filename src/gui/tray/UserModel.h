@@ -22,7 +22,7 @@ class User : public QObject
     Q_PROPERTY(bool hasLocalFolder READ hasLocalFolder NOTIFY hasLocalFolderChanged)
     Q_PROPERTY(bool serverHasTalk READ serverHasTalk NOTIFY serverHasTalkChanged)
 public:
-    User(AccountStatePtr &account, const bool &isCurrent = false, QObject* parent = 0);
+    User(AccountStatePtr &account, const bool &isCurrent = false, QObject* parent = nullptr);
 
     AccountPtr account() const;
 
@@ -91,7 +91,7 @@ class UserModel : public QAbstractListModel
     Q_PROPERTY(User* currentUser READ currentUser NOTIFY newUserSelected)
 public:
     static UserModel *instance();
-    virtual ~UserModel() {};
+    virtual ~UserModel() = default;
 
     void addUser(AccountStatePtr &user, const bool &isCurrent = false);
     int currentUserIndex();
@@ -143,7 +143,7 @@ protected:
 
 private:
     static UserModel *_instance;
-    UserModel(QObject *parent = 0);
+    UserModel(QObject *parent = nullptr);
     QList<User*> _users;
     int _currentUserId = 0;
     bool _init = true;
@@ -163,7 +163,7 @@ class UserAppsModel : public QAbstractListModel
     Q_OBJECT
 public:
     static UserAppsModel *instance();
-    virtual ~UserAppsModel() {};
+    virtual ~UserAppsModel() = default;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
 
@@ -185,7 +185,7 @@ protected:
 
 private:
     static UserAppsModel *_instance;
-    UserAppsModel(QObject *parent = 0);
+    UserAppsModel(QObject *parent = nullptr);
 
     AccountAppList _apps;
 };
